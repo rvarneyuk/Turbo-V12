@@ -32,7 +32,7 @@ constexpr float kRoadNear = kScreenWidth * 0.45f;
 constexpr float kRoadFar = kScreenWidth * 0.08f;
 constexpr int kHorizonY = kScreenHeight / 3;
 
-float lerp(float a, float b, float t) { return a + (b - a) * t; }
+float Lerp(float a, float b, float t) { return a + (b - a) * t; }
 
 struct LevelTheme {
     SDL_Color skyTop;
@@ -75,9 +75,9 @@ const std::array<LevelDescription, 5> kLevels{LevelDescription{
 
 SDL_Color lerpColor(SDL_Color a, SDL_Color b, float t) {
     SDL_Color out{};
-    out.r = static_cast<Uint8>(std::clamp(lerp(a.r, b.r, t), 0.0f, 255.0f));
-    out.g = static_cast<Uint8>(std::clamp(lerp(a.g, b.g, t), 0.0f, 255.0f));
-    out.b = static_cast<Uint8>(std::clamp(lerp(a.b, b.b, t), 0.0f, 255.0f));
+    out.r = static_cast<Uint8>(std::clamp(Lerp(a.r, b.r, t), 0.0f, 255.0f));
+    out.g = static_cast<Uint8>(std::clamp(Lerp(a.g, b.g, t), 0.0f, 255.0f));
+    out.b = static_cast<Uint8>(std::clamp(Lerp(a.b, b.b, t), 0.0f, 255.0f));
     out.a = 255;
     return out;
 }
@@ -104,12 +104,12 @@ Projection project(float lane, float z, float playerDistance) {
     Projection p;
     p.visible = z >= minZ && z <= maxZ;
     p.y = static_cast<int>(kHorizonY + depth * (kScreenHeight - kHorizonY - 40));
-    float roadHalf = lerp(kRoadFar, kRoadNear, depth);
+    float roadHalf = Lerp(kRoadFar, kRoadNear, depth);
     float nearOffset = roadCenterOffset(playerDistance);
     float farOffset = roadCenterOffset(playerDistance + z * 1.8f);
-    float center = kScreenWidth / 2 + lerp(farOffset, nearOffset, depth);
+    float center = kScreenWidth / 2 + Lerp(farOffset, nearOffset, depth);
     p.x = static_cast<int>(center + lane * roadHalf);
-    p.scale = lerp(0.35f, 3.2f, depth);
+    p.scale = Lerp(0.35f, 3.2f, depth);
     return p;
 }
 
@@ -337,10 +337,10 @@ void drawRoad(SDL_Renderer *renderer, const LevelDescription &level, float playe
     float nearOffset = roadCenterOffset(playerDistance);
     for (int y = kHorizonY; y < kScreenHeight; ++y) {
         float t = static_cast<float>(y - kHorizonY) / (kScreenHeight - kHorizonY);
-        float roadHalf = lerp(kRoadFar, kRoadNear, t);
+        float roadHalf = Lerp(kRoadFar, kRoadNear, t);
         float depth = 1.0f - t;
         float aheadDistance = playerDistance + depth * 600.0f;
-        float centerOffset = lerp(roadCenterOffset(aheadDistance), nearOffset, t);
+        float centerOffset = Lerp(roadCenterOffset(aheadDistance), nearOffset, t);
         int center = static_cast<int>(kScreenWidth / 2 + centerOffset);
         int left = center - static_cast<int>(roadHalf);
         int right = center + static_cast<int>(roadHalf);
@@ -687,7 +687,7 @@ int main(int argc, char **argv) {
         // Smoke render
         for (const auto &particle : smoke) {
             float alpha = 1.0f - (particle.life / particle.maxLife);
-            int shade = static_cast<int>(lerp(120.0f, 220.0f, std::clamp(playerSpeed / kMaxSpeed, 0.0f, 1.0f)));
+            int shade = static_cast<int>(Lerp(120.0f, 220.0f, std::clamp(playerSpeed / kMaxSpeed, 0.0f, 1.0f)));
             SDL_SetRenderDrawColor(renderer, shade, shade, shade, static_cast<Uint8>(alpha * 200));
             int size = 6 + static_cast<int>(std::clamp(playerSpeed / kMaxSpeed, 0.0f, 1.0f) * 8.0f);
             SDL_Rect rect{static_cast<int>(particle.x), static_cast<int>(particle.y), size, size};
