@@ -13,6 +13,7 @@
 #include "sprites/people_sprites.h"
 #include "sprites/player_car_sprite.h"
 #include "sprites/traffic_car_sprite.h"
+#include "sprites/tree_sprite.h"
 #include "text/tiny_font.h"
 
 #ifndef M_PI
@@ -128,12 +129,20 @@ struct TrafficCar {
     float speed = 60.0f;
     float swerveTimer = 0.0f;
     float swerveDirection = 0.0f;
-    const std::array<Uint32, TRAFFIC_CAR_WIDTH * TRAFFIC_CAR_HEIGHT> *sprite = &TRAFFIC_CAR_PIXELS_RED;
+    const TrafficSprite *sprite = &TRAFFIC_RED_SPRITE;
+    float spriteScale = 1.0f;
 };
 
 struct RoadObstacle {
     float z = 100.0f;
     bool left = true;
+};
+
+struct RoadTree {
+    float lane = 1.2f;
+    float z = 200.0f;
+    float swayPhase = 0.0f;
+    float swaySpeed = 0.5f;
 };
 
 enum class GameState { Welcome, StartingLine, Playing, LevelComplete, LevelFailed, GameWon };
@@ -221,9 +230,7 @@ struct DieselAudio {
     ~DieselAudio() { if (device) SDL_CloseAudioDevice(device); }
 };
 
-template <size_t Size>
-void drawSprite(SDL_Renderer *renderer, int x, int y, float scale,
-                const std::array<Uint32, Size> &pixels, int width, int height) {
+void drawSprite(SDL_Renderer *renderer, int x, int y, float scale, const Uint32 *pixels, int width, int height) {
     for (int py = 0; py < height; ++py) {
         for (int px = 0; px < width; ++px) {
             Uint32 pixel = pixels[py * width + px];
@@ -358,6 +365,66 @@ void drawRoad(SDL_Renderer *renderer, const LevelDescription &level, float playe
     }
 }
 
+void drawGradientRect(SDL_Renderer *renderer, SDL_Rect rect, SDL_Color top, SDL_Color bottom) {
+    for (int y = 0; y < rect.h; ++y) {
+        float t = static_cast<float>(y) / rect.h;
+        SDL_Color color = lerpColor(top, bottom, t);
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+        SDL_RenderDrawLine(renderer, rect.x, rect.y + y, rect.x + rect.w, rect.y + y);
+    }
+}
+
+void drawHudBackdrop(SDL_Renderer *renderer, const LevelTheme &theme) {
+    SDL_Rect topRect{0, 0, kScreenWidth, 110};
+    SDL_Color topColor = {static_cast<Uint8>(std::min(255, theme.horizonAccent.r + 40)),
+                          static_cast<Uint8>(std::min(255, theme.horizonAccent.g + 40)),
+                          static_cast<Uint8>(std::min(255, theme.horizonAccent.b + 40)), 180};
+    SDL_Color bottomColor = {static_cast<Uint8>(theme.road.r / 2 + 20), static_cast<Uint8>(theme.road.g / 2 + 20),
+                             static_cast<Uint8>(theme.road.b / 2 + 20), 180};
+    drawGradientRect(renderer, topRect, topColor, bottomColor);
+
+    SDL_Rect bottomRibbon{0, kScreenHeight - 90, kScreenWidth, 90};
+    SDL_Color ribbonTop = {255, 80, 120, 120};
+    SDL_Color ribbonBottom = {80, 10, 40, 180};
+    drawGradientRect(renderer, bottomRibbon, ribbonTop, ribbonBottom);
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 90);
+    for (int x = 0; x < kScreenWidth; x += 40) {
+        SDL_RenderDrawLine(renderer, x, bottomRibbon.y, x + 20, bottomRibbon.y + bottomRibbon.h);
+    }
+
+    SDL_Rect leftNeon{0, 0, 24, kScreenHeight};
+    SDL_Rect rightNeon{kScreenWidth - 24, 0, 24, kScreenHeight};
+    SDL_Color neonTop = {255, 60, 180, 60};
+    SDL_Color neonBottom = {60, 220, 255, 120};
+    drawGradientRect(renderer, leftNeon, neonBottom, neonTop);
+    drawGradientRect(renderer, rightNeon, neonBottom, neonTop);
+}
+
+void drawScanlines(SDL_Renderer *renderer) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 30);
+    for (int y = 0; y < kScreenHeight; y += 2) {
+        SDL_RenderDrawLine(renderer, 0, y, kScreenWidth, y);
+    }
+}
+
+void drawVignette(SDL_Renderer *renderer) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    for (int i = 0; i < 80; ++i) {
+        Uint8 alpha = static_cast<Uint8>(std::lerp(40.0f, 0.0f, static_cast<float>(i) / 80.0f));
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, alpha);
+        SDL_RenderDrawLine(renderer, i, 0, i, kScreenHeight);
+        SDL_RenderDrawLine(renderer, kScreenWidth - i, 0, kScreenWidth - i, kScreenHeight);
+    }
+    for (int i = 0; i < 80; ++i) {
+        Uint8 alpha = static_cast<Uint8>(std::lerp(50.0f, 0.0f, static_cast<float>(i) / 80.0f));
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, alpha);
+        SDL_RenderDrawLine(renderer, 0, i, kScreenWidth, i);
+        SDL_RenderDrawLine(renderer, 0, kScreenHeight - i, kScreenWidth, kScreenHeight - i);
+    }
+}
+
 std::string formatTime(float timeLeft) {
     if (timeLeft < 0) timeLeft = 0;
     int total = static_cast<int>(std::ceil(timeLeft));
@@ -368,15 +435,10 @@ std::string formatTime(float timeLeft) {
     return buffer;
 }
 
-const std::array<Uint32, TRAFFIC_CAR_WIDTH * TRAFFIC_CAR_HEIGHT> &randomTrafficSprite(std::mt19937 &rng) {
-    switch (rng() % 3) {
-        case 0:
-            return TRAFFIC_CAR_PIXELS_RED;
-        case 1:
-            return TRAFFIC_CAR_PIXELS_BLUE;
-        default:
-            return TRAFFIC_CAR_PIXELS_PURPLE;
-    }
+const TrafficSprite &randomTrafficSprite(std::mt19937 &rng) {
+    static const std::array<const TrafficSprite *, 5> kFleet{
+        &TRAFFIC_RED_SPRITE, &TRAFFIC_BLUE_SPRITE, &TRAFFIC_PURPLE_SPRITE, &TRAFFIC_LORRY_SPRITE, &TRAFFIC_BUS_SPRITE};
+    return *kFleet[rng() % kFleet.size()];
 }
 
 void resetTrafficCar(TrafficCar &car, std::mt19937 &rng, float minZ) {
@@ -387,6 +449,11 @@ void resetTrafficCar(TrafficCar &car, std::mt19937 &rng, float minZ) {
     car.z = zDist(rng);
     car.speed = speedDist(rng);
     car.sprite = &randomTrafficSprite(rng);
+    car.spriteScale = car.sprite->scale;
+    if (car.sprite == &TRAFFIC_BUS_SPRITE || car.sprite == &TRAFFIC_LORRY_SPRITE) {
+        car.speed -= 20.0f;
+        car.speed = std::max(car.speed, 60.0f);
+    }
     car.swerveDirection = 0.0f;
     car.swerveTimer = 0.0f;
 }
@@ -395,6 +462,15 @@ void resetObstacle(RoadObstacle &obstacle, std::mt19937 &rng, float offset) {
     std::uniform_real_distribution<float> zDist(offset + 60.0f, offset + 320.0f);
     obstacle.z = zDist(rng);
     obstacle.left = rng() % 2 == 0;
+}
+
+void resetTree(RoadTree &tree, std::mt19937 &rng, float offset) {
+    std::uniform_real_distribution<float> sideDist(1.05f, 1.5f);
+    std::uniform_real_distribution<float> zDist(offset + 100.0f, offset + 420.0f);
+    tree.lane = (rng() % 2 == 0 ? 1.0f : -1.0f) * sideDist(rng);
+    tree.z = zDist(rng);
+    tree.swayPhase = static_cast<float>(rng() % 1000) / 999.0f * 2.0f * static_cast<float>(M_PI);
+    tree.swaySpeed = 0.6f + static_cast<float>(rng() % 1000) / 999.0f * 1.4f;
 }
 
 } // namespace
@@ -430,6 +506,7 @@ int main(int argc, char **argv) {
     std::mt19937 rng{std::random_device{}()};
     std::vector<TrafficCar> traffic(6);
     std::vector<RoadObstacle> obstacles(8);
+    std::vector<RoadTree> trees(16);
     std::vector<SmokeParticle> smoke;
     smoke.reserve(200);
 
@@ -438,6 +515,7 @@ int main(int argc, char **argv) {
     float levelTimer = kLevelTimerSeconds;
     float playerSpeed = 0.0f;
     float playerLane = 0.0f;
+    float playerLean = 0.0f;
     float hornTimer = 0.0f;
     GameState state = GameState::Welcome;
     float stateTimer = 0.0f;
@@ -455,6 +533,9 @@ int main(int argc, char **argv) {
         }
         for (size_t i = 0; i < obstacles.size(); ++i) {
             resetObstacle(obstacles[i], rng, static_cast<float>(i) * 80.0f);
+        }
+        for (size_t i = 0; i < trees.size(); ++i) {
+            resetTree(trees[i], rng, static_cast<float>(i) * 90.0f);
         }
     };
 
@@ -550,6 +631,8 @@ int main(int argc, char **argv) {
                 float curveInfluence = (roadCenterOffset(levelProgress + 120.0f) - roadCenterOffset(levelProgress)) /
                                        (kScreenWidth * 0.18f);
                 playerLane -= curveInfluence * dt * (playerSpeed / kMaxSpeed) * 0.6f;
+                float leanTarget = steer - curveInfluence * 0.8f;
+                playerLean = std::clamp(Lerp(playerLean, leanTarget, dt * 6.0f), -1.2f, 1.2f);
                 playerLane = std::clamp(playerLane, -1.0f, 1.0f);
 
                 float acceleration = 0.0f;
@@ -604,6 +687,15 @@ int main(int argc, char **argv) {
                     }
                 }
 
+                for (auto &tree : trees) {
+                    tree.z -= playerSpeed * dt;
+                    tree.swayPhase += tree.swaySpeed * dt;
+                    if (tree.z < 40.0f) {
+                        resetTree(tree, rng, 260.0f);
+                        tree.z += 260.0f;
+                    }
+                }
+
                 if (std::abs(playerLane) > 0.92f) {
                     playerSpeed = std::min(playerSpeed, kMaxSpeed * 0.7f);
                 }
@@ -631,6 +723,10 @@ int main(int argc, char **argv) {
                 break;
             case GameState::GameWon:
                 break;
+        }
+
+        if (state != GameState::Playing) {
+            playerLean = Lerp(playerLean, 0.0f, dt * 3.0f);
         }
 
         // Smoke update
@@ -669,12 +765,22 @@ int main(int argc, char **argv) {
         drawHorizon(renderer, level, now * 0.001f, levelProgress);
         drawRoad(renderer, level, levelProgress);
 
+        for (const auto &tree : trees) {
+            float swayLane = tree.lane + std::sin(tree.swayPhase) * 0.05f;
+            auto proj = project(swayLane, tree.z, levelProgress);
+            if (!proj.visible) continue;
+            float scale = std::clamp(proj.scale * 2.6f, 0.45f, 5.5f);
+            drawSprite(renderer, proj.x - static_cast<int>(TREE_WIDTH * scale / 2),
+                       proj.y - static_cast<int>(TREE_HEIGHT * scale), scale, TREE_PIXELS.data(), TREE_WIDTH,
+                       TREE_HEIGHT);
+        }
+
         // Obstacles
         for (const auto &obstacle : obstacles) {
             auto proj = project(obstacle.left ? -0.98f : 0.98f, obstacle.z, levelProgress);
             if (!proj.visible) continue;
             drawSprite(renderer, proj.x - static_cast<int>(OBSTACLE_WIDTH * proj.scale / 2),
-                       proj.y - static_cast<int>(OBSTACLE_HEIGHT * proj.scale), proj.scale, OBSTACLE_PIXELS,
+                       proj.y - static_cast<int>(OBSTACLE_HEIGHT * proj.scale), proj.scale, OBSTACLE_PIXELS.data(),
                        OBSTACLE_WIDTH, OBSTACLE_HEIGHT);
         }
 
@@ -682,14 +788,20 @@ int main(int argc, char **argv) {
         for (const auto &car : traffic) {
             auto proj = project(car.lane, car.z, levelProgress);
             if (!proj.visible) continue;
-            drawSprite(renderer, proj.x - static_cast<int>(TRAFFIC_CAR_WIDTH * proj.scale / 2),
-                       proj.y - static_cast<int>(TRAFFIC_CAR_HEIGHT * proj.scale), proj.scale, *car.sprite,
-                       TRAFFIC_CAR_WIDTH, TRAFFIC_CAR_HEIGHT);
+            float scale = proj.scale * car.spriteScale;
+            drawSprite(renderer, proj.x - static_cast<int>(car.sprite->width * scale / 2),
+                       proj.y - static_cast<int>(car.sprite->height * scale), scale, car.sprite->pixels,
+                       car.sprite->width, car.sprite->height);
         }
 
-        // Player car
-        drawSprite(renderer, playerScreenX - static_cast<int>(PLAYER_CAR_WIDTH * 3.4f / 2), playerScreenY,
-                   3.4f, PLAYER_CAR_PIXELS, PLAYER_CAR_WIDTH, PLAYER_CAR_HEIGHT);
+        float playerScale = 3.4f;
+        float laneTilt = playerLean * 12.0f;
+        float leanNormalized = std::clamp((playerLean + 1.2f) / 2.4f, 0.0f, 1.0f);
+        int frameIndex = std::min(4, static_cast<int>(std::round(leanNormalized * 4.0f)));
+        auto frame = static_cast<PlayerCarFrame>(frameIndex);
+        const auto &playerSprite = playerCarPixels(frame);
+        drawSprite(renderer, playerScreenX - static_cast<int>(PLAYER_CAR_WIDTH * playerScale / 2) + static_cast<int>(laneTilt),
+                   playerScreenY, playerScale, playerSprite.data(), PLAYER_CAR_WIDTH, PLAYER_CAR_HEIGHT);
 
         // Smoke render
         for (const auto &particle : smoke) {
@@ -701,6 +813,8 @@ int main(int argc, char **argv) {
             SDL_Rect rect{static_cast<int>(particle.x) - size / 2, static_cast<int>(particle.y) - size / 2, size, size};
             SDL_RenderFillRect(renderer, &rect);
         }
+
+        drawHudBackdrop(renderer, level.theme);
 
         // HUD
         SDL_Color textColor = level.theme.text;
@@ -726,12 +840,12 @@ int main(int argc, char **argv) {
                 int crowdY = kScreenHeight - 260;
                 for (int i = 0; i < 6; ++i) {
                     int offsetX = 120 + i * 60;
-                    drawSprite(renderer, offsetX, crowdY, 2.0f, CROWD_PERSON_PIXELS, CROWD_PERSON_WIDTH,
+                    drawSprite(renderer, offsetX, crowdY, 2.0f, CROWD_PERSON_PIXELS.data(), CROWD_PERSON_WIDTH,
                                CROWD_PERSON_HEIGHT);
                     drawSprite(renderer, kScreenWidth - offsetX - CROWD_PERSON_WIDTH * 2, crowdY, 2.0f,
-                               CROWD_PERSON_PIXELS, CROWD_PERSON_WIDTH, CROWD_PERSON_HEIGHT);
+                               CROWD_PERSON_PIXELS.data(), CROWD_PERSON_WIDTH, CROWD_PERSON_HEIGHT);
                 }
-                drawSprite(renderer, kScreenWidth / 2 - 80, crowdY + 20, 2.5f, FLAG_PERSON_PIXELS, FLAG_PERSON_WIDTH,
+                drawSprite(renderer, kScreenWidth / 2 - 80, crowdY + 20, 2.5f, FLAG_PERSON_PIXELS.data(), FLAG_PERSON_WIDTH,
                            FLAG_PERSON_HEIGHT);
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                 SDL_Rect lineRect{static_cast<int>(kScreenWidth / 2 - kRoadNear), kScreenHeight - 190,
@@ -756,6 +870,9 @@ int main(int argc, char **argv) {
                 drawTinyText(renderer, 220, 240, 3.0f, textColor, "OUTRUN ROYALTY ACHIEVED");
                 break;
         }
+
+        drawScanlines(renderer);
+        drawVignette(renderer);
 
         SDL_RenderPresent(renderer);
     }

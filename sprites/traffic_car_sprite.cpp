@@ -2,7 +2,14 @@
 #include "sprites/sprite_utils.h"
 
 namespace {
-constexpr auto rows = std::array<std::string_view, TRAFFIC_CAR_HEIGHT>{
+constexpr int kCarWidth = 40;
+constexpr int kCarHeight = 28;
+constexpr int kBusWidth = 56;
+constexpr int kBusHeight = 32;
+constexpr int kLorryWidth = 58;
+constexpr int kLorryHeight = 34;
+
+constexpr auto carRows = std::array<std::string_view, kCarHeight>{
     "..............bbbbbbbbbbbb..............",
     "..............bbhhhhhhhhbb..............",
     "..............bbhhPPPPHHbb..............",
@@ -32,6 +39,70 @@ constexpr auto rows = std::array<std::string_view, TRAFFIC_CAR_HEIGHT>{
     "..............bbbbBBBBbbbb..............",
     "..............bbbbbbbbbbbb.............."};
 
+constexpr auto busRows = std::array<std::string_view, kBusHeight>{
+    "............bbbbbbbbbbbbbbbbbbbbbbbb............",
+    "............bbRRRRRRRRRRRRRRRRRRRRRR............",
+    "............bbRRRRRRRRRRRRRRRRRRRRRR............",
+    "............bbRRRRRRRRRRRRRRRRRRRRRR............",
+    "............bbRRQQQQQQQQQQQQQQQQRRbb............",
+    "............bRRQQQQQQQQQQQQQQQQQQRRb............",
+    "............bRRQQQQQQQQQQQQQQQQQQRRb............",
+    "............bRRQQQQQQQQQQQQQQQQQQRRb............",
+    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
+    "............bRRrrrrrrrrrrrrrrrrrrRRb............",
+    "............bRRrrrrrrrrrrrrrrrrrrRRb............",
+    "............bRRrrrrrrrrrrrrrrrrrrRRb............",
+    "............bRRrrrrrrrrrrrrrrrrrrRRb............",
+    "............bRRrrrrrrrrrrrrrrrrrrRRb............",
+    "............bRRrrrrrrrrrrrrrrrrrrRRb............",
+    "............bbWWWWWWWWWWWWWWWWWWWWbb............",
+    "............bbWWWWWWWWWWWWWWWWWWWWbb............",
+    "............bbttttttttttttttttttttbb............",
+    "............bbttttttttttttttttttttbb............",
+    "............bbbbBBBBBBBBBBBBBBBBbbbb............",
+    "............bbbbbbbbbbbbbbbbbbbbbbbb............"};
+
+constexpr auto lorryRows = std::array<std::string_view, kLorryHeight>{
+    ".........bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbGGGGGGGGGGGGGGGGGGGGGGGGGGbb.........",
+    ".........bbbbmmmmmmmmmmmmmmmmmmmmmmmmbb.........",
+    ".........bbbbmmmmmmmmmmmmmmmmmmmmmmmmbb.........",
+    ".........bbTTTTTTTTTTTTTTTTTTTTTTTTTTbb.........",
+    ".........bbTTTTTTTTTTTTTTTTTTTTTTTTTTbb.........",
+    ".........bbttttttttttttttttttttttttttbb.........",
+    ".........bbttttttttttttttttttttttttttbb.........",
+    ".........bbbbBBBBBBBBBBBBBBBBBBBBBBBBbb.........",
+    ".........bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb........."};
+
 template <Uint8 R, Uint8 G, Uint8 B>
 constexpr auto makeCar() {
     constexpr auto palette = std::array{
@@ -45,14 +116,40 @@ constexpr auto makeCar() {
         std::pair{'H', rgba(255, 220, 150)},
         std::pair{'t', rgba(255, 90, 70)},
     };
-    return makeSpriteFromArt<TRAFFIC_CAR_WIDTH, TRAFFIC_CAR_HEIGHT, palette.size()>(rows, palette);
+    return makeSpriteFromArt<kCarWidth, kCarHeight, palette.size()>(carRows, palette);
 }
+
+constexpr auto busPalette = std::array{
+    std::pair{'b', rgba(25, 25, 25)},
+    std::pair{'B', rgba(70, 70, 70)},
+    std::pair{'R', rgba(250, 210, 60)},
+    std::pair{'Q', rgba(220, 240, 255)},
+    std::pair{'r', rgba(200, 80, 70)},
+    std::pair{'W', rgba(255, 255, 255)},
+    std::pair{'t', rgba(255, 90, 70)},
+};
+
+constexpr auto lorryPalette = std::array{
+    std::pair{'b', rgba(30, 30, 30)},
+    std::pair{'B', rgba(80, 80, 80)},
+    std::pair{'G', rgba(220, 230, 235)},
+    std::pair{'m', rgba(190, 90, 50)},
+    std::pair{'T', rgba(60, 60, 60)},
+    std::pair{'t', rgba(255, 90, 70)},
+};
+
+const std::array<Uint32, kCarWidth * kCarHeight> kRedPixels = makeCar<220, 60, 60>();
+const std::array<Uint32, kCarWidth * kCarHeight> kBluePixels = makeCar<60, 90, 220>();
+const std::array<Uint32, kCarWidth * kCarHeight> kPurplePixels = makeCar<150, 90, 200>();
+const std::array<Uint32, kBusWidth * kBusHeight> kBusPixels =
+    makeSpriteFromArt<kBusWidth, kBusHeight, busPalette.size()>(busRows, busPalette);
+const std::array<Uint32, kLorryWidth * kLorryHeight> kLorryPixels =
+    makeSpriteFromArt<kLorryWidth, kLorryHeight, lorryPalette.size()>(lorryRows, lorryPalette);
 } // namespace
 
-const std::array<Uint32, TRAFFIC_CAR_WIDTH * TRAFFIC_CAR_HEIGHT> TRAFFIC_CAR_PIXELS_RED =
-    makeCar<220, 60, 60>();
-const std::array<Uint32, TRAFFIC_CAR_WIDTH * TRAFFIC_CAR_HEIGHT> TRAFFIC_CAR_PIXELS_BLUE =
-    makeCar<60, 90, 220>();
-const std::array<Uint32, TRAFFIC_CAR_WIDTH * TRAFFIC_CAR_HEIGHT> TRAFFIC_CAR_PIXELS_PURPLE =
-    makeCar<150, 90, 200>();
+const TrafficSprite TRAFFIC_RED_SPRITE{kRedPixels.data(), kCarWidth, kCarHeight, 1.0f};
+const TrafficSprite TRAFFIC_BLUE_SPRITE{kBluePixels.data(), kCarWidth, kCarHeight, 1.0f};
+const TrafficSprite TRAFFIC_PURPLE_SPRITE{kPurplePixels.data(), kCarWidth, kCarHeight, 1.0f};
+const TrafficSprite TRAFFIC_BUS_SPRITE{kBusPixels.data(), kBusWidth, kBusHeight, 1.18f};
+const TrafficSprite TRAFFIC_LORRY_SPRITE{kLorryPixels.data(), kLorryWidth, kLorryHeight, 1.22f};
 
