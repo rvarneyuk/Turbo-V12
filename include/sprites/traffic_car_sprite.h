@@ -3,10 +3,16 @@
 #include <SDL2/SDL.h>
 #include <array>
 
-constexpr int TRAFFIC_CAR_WIDTH = 40;
-constexpr int TRAFFIC_CAR_HEIGHT = 28;
+struct TrafficSprite {
+    const Uint32 *pixels;
+    int width;
+    int height;
+    float scale;
+};
 
-extern const std::array<Uint32, TRAFFIC_CAR_WIDTH * TRAFFIC_CAR_HEIGHT> TRAFFIC_CAR_PIXELS_RED;
-extern const std::array<Uint32, TRAFFIC_CAR_WIDTH * TRAFFIC_CAR_HEIGHT> TRAFFIC_CAR_PIXELS_BLUE;
-extern const std::array<Uint32, TRAFFIC_CAR_WIDTH * TRAFFIC_CAR_HEIGHT> TRAFFIC_CAR_PIXELS_PURPLE;
+extern const TrafficSprite TRAFFIC_RED_SPRITE;
+extern const TrafficSprite TRAFFIC_BLUE_SPRITE;
+extern const TrafficSprite TRAFFIC_PURPLE_SPRITE;
+extern const TrafficSprite TRAFFIC_LORRY_SPRITE;
+extern const TrafficSprite TRAFFIC_BUS_SPRITE;
 

@@ -1,6 +1,8 @@
 #include "sprites/player_car_sprite.h"
 #include "sprites/sprite_utils.h"
 
+#include <cmath>
+
 namespace {
 constexpr auto rows = std::array<std::string_view, PLAYER_CAR_HEIGHT>{
     "..................bbbbbbbbbbbb..................",
@@ -49,6 +51,35 @@ constexpr auto palette = std::array{
 };
 } // namespace
 
-const std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> PLAYER_CAR_PIXELS =
+const std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> PLAYER_CAR_BASE_PIXELS =
     makeSpriteFromArt<PLAYER_CAR_WIDTH, PLAYER_CAR_HEIGHT, palette.size()>(rows, palette);
+
+std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> skewSprite(const std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> &source,
+                                                                    float skew) {
+    std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> output{};
+    output.fill(0);
+    for (int y = 0; y < PLAYER_CAR_HEIGHT; ++y) {
+        float t = (static_cast<float>(y) / PLAYER_CAR_HEIGHT) - 0.5f;
+        int shift = static_cast<int>(std::round(t * skew));
+        for (int x = 0; x < PLAYER_CAR_WIDTH; ++x) {
+            int targetX = x + shift;
+            if (targetX < 0 || targetX >= PLAYER_CAR_WIDTH) continue;
+            output[y * PLAYER_CAR_WIDTH + targetX] = source[y * PLAYER_CAR_WIDTH + x];
+        }
+    }
+    return output;
+}
+
+const std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> PLAYER_CAR_HARD_LEFT_PIXELS =
+    skewSprite(PLAYER_CAR_BASE_PIXELS, -8.0f);
+const std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> PLAYER_CAR_SOFT_LEFT_PIXELS =
+    skewSprite(PLAYER_CAR_BASE_PIXELS, -4.0f);
+const std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> PLAYER_CAR_SOFT_RIGHT_PIXELS =
+    skewSprite(PLAYER_CAR_BASE_PIXELS, 4.0f);
+const std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> PLAYER_CAR_HARD_RIGHT_PIXELS =
+    skewSprite(PLAYER_CAR_BASE_PIXELS, 8.0f);
+
+const std::array<const std::array<Uint32, PLAYER_CAR_WIDTH * PLAYER_CAR_HEIGHT> *, 5> PLAYER_CAR_FRAMES = {
+    &PLAYER_CAR_HARD_LEFT_PIXELS, &PLAYER_CAR_SOFT_LEFT_PIXELS, &PLAYER_CAR_BASE_PIXELS,
+    &PLAYER_CAR_SOFT_RIGHT_PIXELS, &PLAYER_CAR_HARD_RIGHT_PIXELS};
 
