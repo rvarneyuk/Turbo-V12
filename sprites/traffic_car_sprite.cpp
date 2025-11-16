@@ -4,10 +4,14 @@
 namespace {
 constexpr int kCarWidth = 40;
 constexpr int kCarHeight = 28;
-constexpr int kBusWidth = 56;
-constexpr int kBusHeight = 32;
-constexpr int kLorryWidth = 58;
-constexpr int kLorryHeight = 34;
+// NOTE: keep these dimensions in sync with the ASCII art below. The previous
+// values were larger than the actual sprite rows, which caused
+// makeSpriteFromArt to read past the end of the strings during global
+// initialization and crash before main().
+constexpr int kBusWidth = 48;
+constexpr int kBusHeight = 28;
+constexpr int kLorryWidth = 48;
+constexpr int kLorryHeight = 32;
 
 constexpr auto carRows = std::array<std::string_view, kCarHeight>{
     "..............bbbbbbbbbbbb..............",
@@ -48,14 +52,14 @@ constexpr auto busRows = std::array<std::string_view, kBusHeight>{
     "............bRRQQQQQQQQQQQQQQQQQQRRb............",
     "............bRRQQQQQQQQQQQQQQQQQQRRb............",
     "............bRRQQQQQQQQQQQQQQQQQQRRb............",
-    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
-    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
-    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
-    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
-    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
-    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
-    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
-    "...........bRRQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQQRRb...........",
+    "...........bRRQQQQQQQQQQQQQQQQQQQQRRb...........",
     "............bRRrrrrrrrrrrrrrrrrrrRRb............",
     "............bRRrrrrrrrrrrrrrrrrrrRRb............",
     "............bRRrrrrrrrrrrrrrrrrrrRRb............",
