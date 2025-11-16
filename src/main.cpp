@@ -20,8 +20,8 @@
 #endif
 
 namespace {
-constexpr int kScreenWidth = 960;
-constexpr int kScreenHeight = 540;
+constexpr int kScreenWidth = 1920;
+constexpr int kScreenHeight = 1080;
 constexpr float kLevelLength = 3200.0f;
 constexpr float kLevelTimerSeconds = 120.0f;
 constexpr float kMaxSpeed = 220.0f;
@@ -350,10 +350,10 @@ void drawRoad(SDL_Renderer *renderer, const LevelDescription &level, float playe
         SDL_RenderDrawLine(renderer, left - 4, y, left, y);
         SDL_RenderDrawLine(renderer, right, y, right + 4, y);
         if (((static_cast<int>(playerDistance * 0.2f + t * 120) / 6) % 2) == 0) {
-            int stripeCenter = kScreenWidth / 2;
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            SDL_RenderDrawLine(renderer, stripeCenter - 4 + static_cast<int>(centerOffset * 0.5f), y,
-                               stripeCenter + 4 + static_cast<int>(centerOffset * 0.5f), y);
+            int stripeHalf = std::max(2, static_cast<int>(Lerp(1.5f, 16.0f, t)));
+            int stripeCenter = center;
+            SDL_RenderDrawLine(renderer, stripeCenter - stripeHalf, y, stripeCenter + stripeHalf, y);
         }
     }
 }

@@ -2,6 +2,8 @@
 
 An SDL2-powered homage to old-school sprite-scaling racers. Pilot a blaze-yellow Peugeot 306 Turbo Diesel across five themed stages full of twisting parallax roads, melodic diesel vibes, and crowd-pleasing smoke shows while beating the two-minute-per-stage timer.
 
+The playfield now spans a full 1920×1080 window, and every sprite—from the Peugeot and rival traffic to the start-line crew and cones—has been redrawn at double resolution for chunkier, more detailed pixel art.
+
 ## Requirements
 - SDL2 development libraries (`libsdl2-dev`).
 
