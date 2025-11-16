@@ -1,6 +1,6 @@
-# Turbo-V12
+# Single Turbo D4
 
-An SDL2-powered homage to old-school sprite-scaling racers. Pilot a blaze-yellow Peugeot 306 Turbo Diesel across five themed stages, dodge traffic, blare the horn to scatter rivals, and beat the two-minute-per-stage timer.
+An SDL2-powered homage to old-school sprite-scaling racers. Pilot a blaze-yellow Peugeot 306 Turbo Diesel across five themed stages full of twisting parallax roads, melodic diesel vibes, and crowd-pleasing smoke shows while beating the two-minute-per-stage timer.
 
 ## Requirements
 - SDL2 development libraries (`libsdl2-dev`).
@@ -23,6 +23,8 @@ This produces the `turbo_v12` executable in the repository root.
 ```
 
 ## Controls
+- **Up arrow (or W):** Accelerate the smoky diesel.
+- **Down arrow (or S):** Brake hard and scrub speed.
 - **Left / Right arrows (or A / D):** Steer the Peugeot 306.
 - **Space bar:** Honk the grumpy diesel horn. Traffic cars will panic and swerve.
 - **Enter:** Advance from the welcome screen, re-try after a failure, or move to the next stage.
