@@ -430,7 +430,7 @@ std::string formatTime(float timeLeft) {
     int total = static_cast<int>(std::ceil(timeLeft));
     int minutes = total / 60;
     int seconds = total % 60;
-    char buffer[8];
+    char buffer[16];
     std::snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, seconds);
     return buffer;
 }
