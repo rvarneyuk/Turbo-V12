@@ -637,14 +637,21 @@ int main(int argc, char **argv) {
         float roadCenter = kScreenWidth / 2 + roadCenterOffset(levelProgress);
         int playerScreenX = static_cast<int>(roadCenter + playerLane * kRoadNear);
         int playerScreenY = kScreenHeight - 150;
+        float carPixelWidth = PLAYER_CAR_WIDTH * 3.4f;
+        float carPixelHeight = PLAYER_CAR_HEIGHT * 3.4f;
+        float exhaustCenterX = playerScreenX - carPixelWidth * 0.1f;
+        float exhaustSpan = carPixelWidth * 0.45f;
+        float exhaustY = playerScreenY + carPixelHeight - 18.0f;
         float speedRatio = (kMaxSpeed > 0.0f) ? (playerSpeed / kMaxSpeed) : 0.0f;
         if (state == GameState::Playing) {
-            int spawnCount = 2 + static_cast<int>(speedRatio * 6.0f);
+            int spawnCount = 1 + static_cast<int>(speedRatio * 4.0f);
             for (int i = 0; i < spawnCount; ++i) {
-                smoke.push_back(SmokeParticle{static_cast<float>(playerScreenX + (rng() % 30 - 15)),
-                                              static_cast<float>(playerScreenY + 20), (rng() % 40 - 20) * (1.0f + speedRatio),
-                                              -30.0f - (rng() % 20) - speedRatio * 60.0f, 0.0f,
-                                              0.7f + speedRatio * 0.9f});
+                float lateral = (static_cast<float>(rng() % 1000) / 999.0f - 0.5f) * exhaustSpan;
+                float verticalJitter = static_cast<float>(rng() % 8);
+                float vx = (static_cast<float>(rng() % 1000) / 999.0f - 0.5f) * (20.0f + speedRatio * 50.0f);
+                float vy = -45.0f - speedRatio * 90.0f - static_cast<float>(rng() % 25);
+                smoke.push_back(SmokeParticle{exhaustCenterX + lateral, exhaustY + verticalJitter, vx, vy, 0.0f,
+                                              0.5f + speedRatio * 0.8f});
             }
         }
         for (auto &particle : smoke) {
@@ -687,10 +694,11 @@ int main(int argc, char **argv) {
         // Smoke render
         for (const auto &particle : smoke) {
             float alpha = 1.0f - (particle.life / particle.maxLife);
-            int shade = static_cast<int>(Lerp(120.0f, 220.0f, std::clamp(playerSpeed / kMaxSpeed, 0.0f, 1.0f)));
-            SDL_SetRenderDrawColor(renderer, shade, shade, shade, static_cast<Uint8>(alpha * 200));
-            int size = 6 + static_cast<int>(std::clamp(playerSpeed / kMaxSpeed, 0.0f, 1.0f) * 8.0f);
-            SDL_Rect rect{static_cast<int>(particle.x), static_cast<int>(particle.y), size, size};
+            float speedBlend = std::clamp(playerSpeed / kMaxSpeed, 0.0f, 1.0f);
+            int shade = static_cast<int>(Lerp(30.0f, 90.0f, speedBlend));
+            SDL_SetRenderDrawColor(renderer, shade, shade, shade, static_cast<Uint8>(alpha * 160));
+            int size = 5 + static_cast<int>(speedBlend * 6.0f);
+            SDL_Rect rect{static_cast<int>(particle.x) - size / 2, static_cast<int>(particle.y) - size / 2, size, size};
             SDL_RenderFillRect(renderer, &rect);
         }
 
